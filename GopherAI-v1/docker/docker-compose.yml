@@ -1,0 +1,30 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: gopherai-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: "GopherAI"
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - gopherai_mysql:/var/lib/mysql
+
+  redis:
+    image: redis:7
+    container_name: gopherai-redis
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - gopherai_redis:/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: gopherai-rabbitmq
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+
+volumes:
+  gopherai_mysql:
+  gopherai_redis:

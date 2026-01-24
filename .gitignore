@@ -1,0 +1,34 @@
+# --- Go build artifacts ---
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.prof
+
+# project binary
+/GopherAI-v*/GopherAI
+
+# --- Sensitive local config (contains emailConfig, passwords, etc.) ---
+/GopherAI-v*/config/config.toml
+
+# --- Vue / Node build & runtime artifacts ---
+/GopherAI-v*/vue-frontend/node_modules/
+/GopherAI-v*/vue-frontend/dist/
+/GopherAI-v*/vue-frontend/.vite/
+/GopherAI-v*/vue-frontend/.cache/
+/GopherAI-v*/vue-frontend/.turbo/
+/GopherAI-v*/vue-frontend/coverage/
+/GopherAI-v*/vue-frontend/.eslintcache
+/GopherAI-v*/vue-frontend/.env*
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# .vscode
+.vscode/
