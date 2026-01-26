@@ -11,21 +11,32 @@ import (
 
 const (
 	CodeMsg     = "GopherAI验证码如下(验证码仅限于2分钟有效): "
-	UserNameMsg = "GopherAI的账号如下，请保留好，后续可以用账号进行登录 "
+	UserNameMsg = "GopherAI的账号如下，请保留好，后续可以用账号/邮箱进行登录 "
 )
 
 var ctx = context.Background()
 
-// 这边只能通过账号进行登录
+// 登录标识支持 username / email
 func IsExistUser(username string) (bool, *model.User) {
-
-	user, err := mysql.GetUserByUsername(username)
-
-	if err == gorm.ErrRecordNotFound || user == nil {
+	// 1) 先按 username 查
+	u, err := mysql.GetUserByUsername(username)
+	if err == nil && u != nil {
+		return true, u
+	}
+	if err != nil && err != gorm.ErrRecordNotFound {
 		return false, nil
 	}
 
-	return true, user
+	// 2) username 不存在时，尝试按 email 查（支持邮箱号登录）
+	u, err = mysql.GetUserByEmail(username)
+	if err == nil && u != nil {
+		return true, u
+	}
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return false, nil
+	}
+
+	return false, nil
 }
 
 func Register(username, email, password string) (*model.User, bool) {
