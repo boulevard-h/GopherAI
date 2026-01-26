@@ -24,6 +24,38 @@ services:
     ports:
       - "127.0.0.1:5672:5672"
       - "127.0.0.1:15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  rabbitmq-init:
+    image: docker:cli
+    container_name: gopherai-rabbitmq-init
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    # 注意：这里必须让 sh -c 收到“单个脚本字符串”，否则 compose 会把脚本拆成多个参数，
+    # 结果只执行第一条（你之前日志里只看到 `set` 打印环境变量就是这个原因）。
+    command:
+      - |
+        set -eu
+        echo "Waiting for RabbitMQ to be ready..."
+        until docker exec gopherai-rabbitmq rabbitmqctl status >/dev/null 2>&1; do
+          sleep 2
+        done
+
+        echo "Ensuring RabbitMQ user 'root'..."
+        docker exec gopherai-rabbitmq rabbitmqctl add_user root 123456 >/dev/null 2>&1 || true
+        docker exec gopherai-rabbitmq rabbitmqctl change_password root 123456
+        docker exec gopherai-rabbitmq rabbitmqctl set_user_tags root administrator
+        docker exec gopherai-rabbitmq rabbitmqctl set_permissions -p / root ".*" ".*" ".*"
+        echo "RabbitMQ init done."
 
 volumes:
   gopherai_mysql:
