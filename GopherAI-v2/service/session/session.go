@@ -6,13 +6,33 @@ import (
 	"GopherAI/dao/session"
 	"GopherAI/model"
 	"context"
+	"errors"
 	"log"
 	"net/http"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 var ctx = context.Background()
+
+// ensureSessionExistsInDB 校验 sessionID 是否存在且归属当前 userName
+// 目的：避免 /chat/send 通过不存在 sessionID 创建“内存会话”进而写入“孤儿消息”
+func ensureSessionExistsInDB(userName, sessionID string) code.Code {
+	sess, err := session.GetSessionByID(sessionID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return code.CodeRecordNotFound
+		}
+		log.Println("ensureSessionExistsInDB GetSessionByID error:", err)
+		return code.CodeServerBusy
+	}
+	// 防止跨用户访问别人的 session
+	if sess.UserName != userName {
+		return code.CodeRecordNotFound
+	}
+	return code.CodeSuccess
+}
 
 func GetUserSessionsByUserName(userName string) ([]model.SessionInfo, error) {
 	//获取用户的所有会话ID
@@ -89,6 +109,11 @@ func StreamMessageToExistingSession(userName string, sessionID string, userQuest
 		return code.CodeServerBusy
 	}
 
+	// 先校验 session 是否存在（不允许通过不存在 sessionID “隐式创建”）
+	if c := ensureSessionExistsInDB(userName, sessionID); c != code.CodeSuccess {
+		return c
+	}
+
 	manager := aihelper.GetGlobalManager()
 	config := map[string]interface{}{
 		"apiKey":   "your-api-key", // TODO: 从配置中获取
@@ -146,6 +171,11 @@ func CreateStreamSessionAndSendMessage(userName string, userQuestion string, mod
 }
 
 func ChatSend(userName string, sessionID string, userQuestion string, modelType string) (string, code.Code) {
+	// 先校验 session 是否存在（不允许通过不存在 sessionID “隐式创建”）
+	if c := ensureSessionExistsInDB(userName, sessionID); c != code.CodeSuccess {
+		return "", c
+	}
+
 	//1：获取AIHelper
 	manager := aihelper.GetGlobalManager()
 	config := map[string]interface{}{
