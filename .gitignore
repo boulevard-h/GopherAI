@@ -9,6 +9,8 @@
 
 # project binary
 /GopherAI-v*/GopherAI
+/GopherAI-v2/common/mcp/gopherai-mcp
+/GopherAI-v2/uploads/*
 
 # --- Sensitive local config (contains emailConfig, passwords, etc.) ---
 /GopherAI-v*/config/config.toml

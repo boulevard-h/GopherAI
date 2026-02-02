@@ -10,17 +10,20 @@ services:
     volumes:
       - gopherai_mysql:/var/lib/mysql
 
-  redis:
-    image: redis:7
-    container_name: gopherai-redis
+  # v2 启动指南要求：使用带向量能力的 redis-stack，并命名为 redis-vector
+  redis-vector:
+    image: redis/redis-stack-server:latest
+    container_name: redis-vector
     ports:
       - "127.0.0.1:6379:6379"
+      # 可选：RedisInsight Web UI（不需要可删）
+      - "127.0.0.1:8001:8001"
     volumes:
-      - gopherai_redis:/data
+      - redis_data:/data
 
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: gopherai-rabbitmq
+    container_name: rabbitmq
     ports:
       - "127.0.0.1:5672:5672"
       - "127.0.0.1:15672:15672"
@@ -46,17 +49,17 @@ services:
       - |
         set -eu
         echo "Waiting for RabbitMQ to be ready..."
-        until docker exec gopherai-rabbitmq rabbitmqctl status >/dev/null 2>&1; do
+        until docker exec rabbitmq rabbitmqctl status >/dev/null 2>&1; do
           sleep 2
         done
 
         echo "Ensuring RabbitMQ user 'root'..."
-        docker exec gopherai-rabbitmq rabbitmqctl add_user root 123456 >/dev/null 2>&1 || true
-        docker exec gopherai-rabbitmq rabbitmqctl change_password root 123456
-        docker exec gopherai-rabbitmq rabbitmqctl set_user_tags root administrator
-        docker exec gopherai-rabbitmq rabbitmqctl set_permissions -p / root ".*" ".*" ".*"
+        docker exec rabbitmq rabbitmqctl add_user root 123456 >/dev/null 2>&1 || true
+        docker exec rabbitmq rabbitmqctl change_password root 123456
+        docker exec rabbitmq rabbitmqctl set_user_tags root administrator
+        docker exec rabbitmq rabbitmqctl set_permissions -p / root ".*" ".*" ".*"
         echo "RabbitMQ init done."
 
 volumes:
   gopherai_mysql:
-  gopherai_redis:
+  redis_data:
